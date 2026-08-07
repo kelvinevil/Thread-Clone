@@ -26,3 +26,4 @@ node seed.js --thread <id> --likes 50000 --views 1000000
 node seed.js --thread <id> --comments 50
 node seed.js --create --text "Hello world!"
 ```
+# Threads Clone - Fully open, no auth required
