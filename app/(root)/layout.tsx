@@ -37,6 +37,10 @@ export default function RootLayout({
       appearance={{
         baseTheme: dark,
       }}
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      afterSignInUrl="/"
+      afterSignUpUrl="/"
     >
       <html lang='en'>
         <body className={inter.className}>
