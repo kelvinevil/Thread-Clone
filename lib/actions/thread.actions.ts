@@ -60,24 +60,24 @@ export async function createThread({ text, author, communityId, path }: Params
   try {
     connectToDB();
 
-    const communityIdObject = await Community.findOne(
-      { id: communityId },
-      { _id: 1 }
-    );
+    const communityIdObject = communityId
+      ? await Community.findOne({ id: communityId }, { _id: 1 })
+      : null;
 
     const createdThread = await Thread.create({
       text,
       author,
-      community: communityIdObject, // Assign communityId if provided, or leave it null for personal account
+      community: communityIdObject,
     });
 
-    // Update User model
-    await User.findByIdAndUpdate(author, {
-      $push: { threads: createdThread._id },
-    });
+    // Update User model — use findOneAndUpdate with the string `id` field
+    await User.findOneAndUpdate(
+      { id: author },
+      { $push: { threads: createdThread._id } },
+      { upsert: true, new: true }
+    );
 
     if (communityIdObject) {
-      // Update Community model
       await Community.findByIdAndUpdate(communityIdObject, {
         $push: { threads: createdThread._id },
       });
@@ -85,6 +85,7 @@ export async function createThread({ text, author, communityId, path }: Params
 
     revalidatePath(path);
   } catch (error: any) {
+    console.error("createThread error:", error);
     throw new Error(`Failed to create thread: ${error.message}`);
   }
 }
@@ -209,28 +210,29 @@ export async function addCommentToThread(
   connectToDB();
 
   try {
-    // Find the original thread by its ID
     const originalThread = await Thread.findById(threadId);
 
     if (!originalThread) {
       throw new Error("Thread not found");
     }
 
-    // Create the new comment thread
     const commentThread = new Thread({
       text: commentText,
       author: userId,
-      parentId: threadId, // Set the parentId to the original thread's ID
+      parentId: threadId,
     });
 
-    // Save the comment thread to the database
     const savedCommentThread = await commentThread.save();
 
-    // Add the comment thread's ID to the original thread's children array
     originalThread.children.push(savedCommentThread._id);
-
-    // Save the updated original thread to the database
     await originalThread.save();
+
+    // Update the user's threads list using string `id` field
+    await User.findOneAndUpdate(
+      { id: userId },
+      { $push: { threads: savedCommentThread._id } },
+      { upsert: true }
+    );
 
     revalidatePath(path);
   } catch (err) {
