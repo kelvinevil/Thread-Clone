@@ -63,6 +63,57 @@ program
 
 // ── List all threads ──────────────────────────────────────────────────────────
 program
+  .command("create-user")
+  .description("Create the default user for the app")
+  .option("--name <name>", "User display name", "Threads User")
+  .option("--username <username>", "Username", "threadsuser")
+  .option("--id <id>", "User ID (default: from DEFAULT_USER_ID env or 'default-user')")
+  .action(async (options) => {
+    await mongoose.connect(MONGODB_URL);
+
+    const userId = options.id || process.env.DEFAULT_USER_ID || "default-user";
+
+    const existing = await Thread.collection.database.collection("users").findOne({ id: userId });
+    if (existing) {
+      console.log(`  ✓  User "${userId}" already exists.`);
+      console.log(`  Name:   ${existing.name}`);
+      console.log(`  Username: ${existing.username}`);
+      await mongoose.disconnect();
+      return;
+    }
+
+    // We need to insert directly into the users collection
+    const User = mongoose.models.User || mongoose.model("User", new mongoose.Schema({
+      id: { type: String, required: true },
+      username: { type: String, unique: true, required: true },
+      name: { type: String, required: true },
+      image: String,
+      bio: String,
+      threads: [{ type: mongoose.Schema.Types.ObjectId, ref: "Thread" }],
+      onboarded: { type: Boolean, default: true },
+      communities: [{ type: mongoose.Schema.Types.ObjectId, ref: "Community" }],
+    }));
+
+    const user = new User({
+      id: userId,
+      username: options.username,
+      name: options.name,
+      onboarded: true,
+    });
+
+    await user.save();
+
+    console.log(`\n  ✅  Default user created!`);
+    console.log(`  ID:       ${user.id}`);
+    console.log(`  Name:     ${user.name}`);
+    console.log(`  Username: ${user.username}`);
+    console.log(`  ─────────────────────────────────────────\n`);
+    console.log(`  Set DEFAULT_USER_ID=${user.id} in your .env to use this user.\n`);
+
+    await mongoose.disconnect();
+  });
+
+program
   .command("list")
   .description("List all top-level threads with their current likes/views/comments")
   .action(async () => {

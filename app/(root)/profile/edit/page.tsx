@@ -1,25 +1,17 @@
-import { currentUser } from "@clerk/nextjs";
-import { redirect } from "next/navigation";
-
 import { fetchUser } from "@/lib/actions/user.actions";
 import AccountProfile from "@/components/forms/AccountProfile";
 
-// Copy paste most of the code as it is from the /onboarding
-
 async function Page() {
-  const user = await currentUser();
-  if (!user) return null;
-
-  const userInfo = await fetchUser(user.id);
-  if (!userInfo?.onboarded) redirect("/onboarding");
+  const defaultUserId = process.env.DEFAULT_USER_ID || "default-user";
+  const userInfo = await fetchUser(defaultUserId);
 
   const userData = {
-    id: user.id,
+    id: defaultUserId,
     objectId: userInfo?._id,
-    username: userInfo ? userInfo?.username : user.username,
-    name: userInfo ? userInfo?.name : user.firstName ?? "",
-    bio: userInfo ? userInfo?.bio : "",
-    image: userInfo ? userInfo?.image : user.imageUrl,
+    username: userInfo ? userInfo.username : "threadsuser",
+    name: userInfo ? userInfo.name : "Threads User",
+    bio: userInfo ? userInfo.bio : "",
+    image: userInfo ? userInfo.image : "",
   };
 
   return (
@@ -28,7 +20,7 @@ async function Page() {
       <p className='mt-3 text-base-regular text-light-2'>Make any changes</p>
 
       <section className='mt-12'>
-        <AccountProfile user={userData} btnTitle='Continue' />
+        <AccountProfile user={userData} btnTitle='Save Changes' />
       </section>
     </>
   );

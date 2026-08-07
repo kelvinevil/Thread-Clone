@@ -1,6 +1,4 @@
 import Image from "next/image";
-import { currentUser } from "@clerk/nextjs";
-import { redirect } from "next/navigation";
 
 import { profileTabs } from "@/constants";
 
@@ -11,17 +9,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchUser } from "@/lib/actions/user.actions";
 
 async function Page({ params }: { params: { id: string } }) {
-  const user = await currentUser();
-  if (!user) return null;
-
   const userInfo = await fetchUser(params.id);
-  if (!userInfo?.onboarded) redirect("/onboarding");
+
+  if (!userInfo) {
+    return (
+      <section className='flex items-center justify-center min-h-[60vh]'>
+        <p className='text-light-3'>User not found</p>
+      </section>
+    );
+  }
 
   return (
     <section>
       <ProfileHeader
         accountId={userInfo.id}
-        authUserId={user.id}
+        authUserId={process.env.DEFAULT_USER_ID || "default-user"}
         name={userInfo.name}
         username={userInfo.username}
         imgUrl={userInfo.image}
@@ -58,7 +60,7 @@ async function Page({ params }: { params: { id: string } }) {
             >
               {/* @ts-ignore */}
               <ThreadsTab
-                currentUserId={user.id}
+                currentUserId={process.env.DEFAULT_USER_ID || "default-user"}
                 accountId={userInfo.id}
                 accountType='User'
               />
@@ -69,4 +71,5 @@ async function Page({ params }: { params: { id: string } }) {
     </section>
   );
 }
+
 export default Page;

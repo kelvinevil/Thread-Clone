@@ -1,16 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
-import { currentUser } from "@clerk/nextjs";
-import { redirect } from "next/navigation";
 
 import { fetchUser, getActivity } from "@/lib/actions/user.actions";
 
 async function Page() {
-  const user = await currentUser();
-  if (!user) return null;
+  const defaultUserId = process.env.DEFAULT_USER_ID || "default-user";
+  const userInfo = await fetchUser(defaultUserId);
 
-  const userInfo = await fetchUser(user.id);
-  if (!userInfo?.onboarded) redirect("/onboarding");
+  if (!userInfo) {
+    return (
+      <section className='flex items-center justify-center min-h-[60vh]'>
+        <p className='text-light-3'>No activity</p>
+      </section>
+    );
+  }
 
   const activity = await getActivity(userInfo._id);
 
@@ -21,11 +24,11 @@ async function Page() {
       <section className='mt-10 flex flex-col gap-5'>
         {activity.length > 0 ? (
           <>
-            {activity.map((activity) => (
-              <Link key={activity._id} href={`/thread/${activity.parentId}`}>
+            {activity.map((activityItem) => (
+              <Link key={activityItem._id} href={`/thread/${activityItem.parentId}`}>
                 <article className='activity-card'>
                   <Image
-                    src={activity.author.image}
+                    src={activityItem.author.image}
                     alt='user_logo'
                     width={20}
                     height={20}
@@ -33,7 +36,7 @@ async function Page() {
                   />
                   <p className='!text-small-regular text-light-1'>
                     <span className='mr-1 text-primary-500'>
-                      {activity.author.name}
+                      {activityItem.author.name}
                     </span>{" "}
                     replied to your thread
                   </p>

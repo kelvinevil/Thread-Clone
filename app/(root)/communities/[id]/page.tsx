@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { currentUser } from "@clerk/nextjs";
 
 import { communityTabs } from "@/constants";
 
@@ -11,16 +10,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchCommunityDetails } from "@/lib/actions/community.actions";
 
 async function Page({ params }: { params: { id: string } }) {
-  const user = await currentUser();
-  if (!user) return null;
-
   const communityDetails = await fetchCommunityDetails(params.id);
+
+  if (!communityDetails) {
+    return (
+      <section className='flex items-center justify-center min-h-[60vh]'>
+        <p className='text-light-3'>Community not found</p>
+      </section>
+    );
+  }
 
   return (
     <section>
       <ProfileHeader
         accountId={communityDetails.createdBy.id}
-        authUserId={user.id}
+        authUserId={process.env.DEFAULT_USER_ID || "default-user"}
         name={communityDetails.name}
         username={communityDetails.username}
         imgUrl={communityDetails.image}
@@ -54,7 +58,7 @@ async function Page({ params }: { params: { id: string } }) {
           <TabsContent value='threads' className='w-full text-light-1'>
             {/* @ts-ignore */}
             <ThreadsTab
-              currentUserId={user.id}
+              currentUserId={process.env.DEFAULT_USER_ID || "default-user"}
               accountId={communityDetails._id}
               accountType='Community'
             />
@@ -78,7 +82,7 @@ async function Page({ params }: { params: { id: string } }) {
           <TabsContent value='requests' className='w-full text-light-1'>
             {/* @ts-ignore */}
             <ThreadsTab
-              currentUserId={user.id}
+              currentUserId={process.env.DEFAULT_USER_ID || "default-user"}
               accountId={communityDetails._id}
               accountType='Community'
             />
